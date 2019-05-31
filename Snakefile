@@ -8,6 +8,7 @@ configfile: 'config.yaml'
 # Get overall workflow parameters from config.yaml
 
 samples = config['samples']
+reference_genome = config['reference_genome']
 
 # rule all:
 #    input:
@@ -37,10 +38,10 @@ rule fastqc_cat:
         'temp_data/{samples}_1.fastq',
         'temp_data/{samples}_2.fastq'
     output:
-        '1_fastqc/{samples}' + '_1_fastqc.html',
-        '1_fastqc/{samples}' + '_2_fastqc.html',
-        '1_fastqc/{samples}' + '_1_fastqc.zip',
-        '1_fastqc/{samples}' + '_2_fastqc.zip'
+        '1_fastqc/{samples}_1_fastqc.html',
+        '1_fastqc/{samples}_2_fastqc.html',
+        '1_fastqc/{samples}_1_fastqc.zip',
+        '1_fastqc/{samples}_2_fastqc.zip'
     params:
         out_dir = '1_fastqc/'
     shell:
@@ -83,17 +84,13 @@ rule bwameth_reference:
         temp('temp_data/{samples}.bam')
     threads:
         config[bwameth]['threads']
-    params:
-        reference_genome = config[bwameth]['reference_genome']
     shell:
         '''
         bwameth.py \
         -t {threads} \
-        --reference {params.reference_genome} \
+        --reference {reference_genome} \
         {input} \
-        | \
-        samtools view -bhS - \
-        > {output}
+        | samtools view -bhS - > {output}
         '''
 
 
@@ -103,8 +100,10 @@ rule samtools_sort:
         'temp_data/{samples}.bam'
     output:
         temp('temp_Data/{samples}.sorted.bam')
+    threads:
+        config[samtools]['threads']
     shell:
-        'samtools sort -O BAM {input} > {output}'
+        'samtools sort -@ {threads} -O BAM {input} > {output}'
 
 
 # Mark potential PCR duplicates with Picard Tools
@@ -123,6 +122,96 @@ rule mark_dupes:
         O={output} \
         M={output}.log
         '''
+
+
+# Index the sorted and duplicate-marked bam file
+rule index_sorted_marked_bam:
+    input:
+        '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam'
+    output:
+        '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai'
+    threads:
+        config[samtools_index]['threads']
+    shell:
+        'samtools index -@ {threads} {input} {output}'
+
+
+# Run MethylDackel to get the inclusion bounds for methylation calling
+rule methyldackel_mbias:
+    input:
+        bam = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam'
+        index = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai'
+    output:
+        mbias = '4_methyldackel/{samples}.sorted.markdupes.mbias'
+        ob_plot = '4_methyldackel/{samples}.sorted.markdupes.bam_OB.svg'
+        ot_plot = '4_methyldackel/{samples}.sorted.markdupes.bam_OT.svg'
+    threads:
+        config[methyldackel]['threads']
+    params:
+        out_prefix = '4_methyldackel/{samples}.sorted.markdupes'
+    shell:
+        '''
+        MethylDackel mbias \
+        --CHG \
+        --CHH \
+        -@ {threads} \
+        {genome} \
+        {input.bam} \
+        {params.out_prefix} \
+        2> {output.mbias}
+        '''
+
+
+# Run MethylDackel to extract cytosine stats
+rule methyldackel_extract:
+    input:
+        bam = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam'
+        index = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai'
+        mbias = '4_methyldackel/{samples}.sorted.markdupes.mbias'
+    output:
+        '4_methyldackel/{samples}.sorted.markdupes_CpG.bedGraph',
+        '4_methyldackel/{samples}.sorted.markdupes_CHG.bedGraph',
+        '4_methyldackel/{samples}.sorted.markdupes_CHH.bedGraph',
+        '4_methyldackel/{samples}.sorted.markdupes_CpG.methylKit',
+        '4_methyldackel/{samples}.sorted.markdupes_CHG.methylKit',
+        '4_methyldackel/{samples}.sorted.markdupes_CHH.methylKit'
+    threads:
+        config[methyldackel]['threads']
+    params:
+        out_prefix = '4_methyldackel/{samples}.sorted.markdupes'
+    shell:
+        '''
+        # Get bounds for inclusion
+
+        OT=$(cut -d ' ' -f 5 {input.mbias})
+        OB=$(cut -d ' ' -f 7 {input.mbias})
+
+        # Get a MethylKit compatible file
+
+        MethylDackel extract \
+        --CHG \
+        --CHH \
+        --OT $OT \
+        --OB $OB \
+        --methylKit \
+        -@ {threads} \
+        -o {params.out_prefix} \
+        {genome} \
+        {input.bam}
+
+        # Get the normal bedGraph output file
+
+        MethylDackel extract \
+        --CHG \
+        --CHH \
+        --OT $OT \
+        --OB $OB \
+        -@ {threads} \
+        -o {params.out_prefix} \
+        {genome} \
+        {input.bam}
+        '''
+
 
 # TODO: the rest of the pipeline below this
 

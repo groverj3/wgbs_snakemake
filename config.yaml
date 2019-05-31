@@ -11,18 +11,27 @@ samples:
 
     Sample_JWG3_2_1
 
+reference_genome : 
+    # Path to genome here
+
+
 # Options for individual workflow steps
 
 trim_galore:
     adapter_seq : AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
     quality : 20
 
-
 bwameth:
     threads : 15
-    reference_genome : # Path to genome here
-
 
 mark_duplicates:
     picard_path : /usr/local/bin/picard.jar
     
+samtools_sort:
+    threads : 5
+
+samtools_index:
+    threads : 5
+
+methyldackel:
+    threads : 5

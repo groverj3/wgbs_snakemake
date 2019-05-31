@@ -1,0 +1,28 @@
+# Author: Jeffrey Grover
+# Purpose: Config file to edit before running the WGBS workflow Snakefile
+# Created: 2019-05-22
+
+# Define sample IDs
+
+samples:
+
+  # Samples should be reported by ID rather than filenames, and exclude the
+  # trailing "_1" or "_2", one sample ID per pair
+
+    Sample_JWG3_2_1
+
+# Options for individual workflow steps
+
+trim_galore:
+    adapter_seq : AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+    quality : 20
+
+
+bwameth:
+    threads : 15
+    reference_genome : # Path to genome here
+
+
+mark_duplicates:
+    picard_path : /usr/local/bin/picard.jar
+    

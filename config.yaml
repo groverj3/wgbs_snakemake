@@ -9,8 +9,6 @@ samples:
   # Samples should be reported by ID rather than filenames, and exclude the
   # trailing "_1" or "_2", one sample ID per pair
 
-    Sample_JWG3_2_1
-
 reference_genome : 
     # Path to genome here
 

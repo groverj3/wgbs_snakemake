@@ -7,13 +7,13 @@ configfile: 'config.yaml'
 
 # Get overall workflow parameters from config.yaml
 
-samples = config['samples']
-reference_genome = config['reference_genome']
+SAMPLES = config['samples']
+REFERENCE_GENOME = config['reference_genome']
 
 rule all:
     input:
-        expand('4_methyldackel/{samples}.sorted.markdupes_{context}.{ext}',
-               samples=samples,
+        expand('4_methyldackel/{sample}.sorted.markdupes_{context}.{ext}',
+               sample=SAMPLES,
                context=[CpG, CHG, CHH],
                ext=[bedGraph, methylKit]
                )
@@ -22,25 +22,25 @@ rule all:
 # Combine the individual files from each sample's R1 and R2 files
 rule concatenate_reads:
     input:
-        'input_data/{samples}/{samples}{lane}R{pair}{id}.{ext}'
+        'input_data/{sample}/{samples}{lane}R{mate}{id}.{ext}'
     output:
-        temp('temp_data/{samples}_R{pair}.fastq')
+        temp('temp_data/{sample}_R{mate}.fastq')
     wildcard_constraints:
-        pair = '1|2',
+        mate = '1|2',
         ext = 'fastq\.gz|fq\.gz'
     shell:
-        'zcat input_data/{input}/{input}*R{pair}*.fastq.gz > {output}'
+        'zcat {input} > {output}'
 
 
 # Run fastqc and keep the output
 rule fastqc_cat:
     input:
-        'temp_data/{samples}_R{pair}.fastq'
+        'temp_data/{sample}_R{mate}.fastq'
     output:
-        '1_fastqc/{samples}_R{pair}_fastqc.html',
-        '1_fastqc/{samples}_R{pair}_fastqc.zip'
+        '1_fastqc/{sample}_R{mate}_fastqc.html',
+        '1_fastqc/{sample}_R{mate}_fastqc.zip'
     wildcard_constraints:
-        pair = '1|2'
+        mate = '1|2'
     params:
         out_dir = '1_fastqc/'
     shell:
@@ -50,12 +50,12 @@ rule fastqc_cat:
 # Trim the concatenated files
 rule trim_galore:
     input:
-        'temp_data/{samples}_R{pair}.fastq.gz'
+        'temp_data/{sample}_R{mate}.fastq.gz'
     output:
-        '2_trim_galore/{samples}_R{pair}_val_{pair}.fq.gz',
-        '2_trim_galore/{samples}_R{pair}_val_{pair}_fastqc.html'
+        '2_trim_galore/{sample}_R{mate}_val_{pair}.fq.gz',
+        '2_trim_galore/{sample}_R{mate}_val_{pair}_fastqc.html'
     wildcard_constraints:
-        pair = '1|2'
+        mate = '1|2'
     params:
         adapter_seq = config[trim_galore]['adapter_seq']
         out_dir = '2_trim_galore'
@@ -68,7 +68,7 @@ rule trim_galore:
         --trim-n \
         --quality 20 \
         --output_dir {params.out_dir} \
-        --paired \
+        --mateed \
         {input}
         '''
 
@@ -76,18 +76,20 @@ rule trim_galore:
 # Align to the reference
 rule bwameth_reference:
     input:
-        '2_trim_galore/{samples}_R{pair}_val_{pair}.fq.gz'
+        '2_trim_galore/{sample}_R{mate}_val_{pair}.fq.gz'
     output:
-        temp('temp_data/{samples}.bam')
+        temp('temp_data/{sample}.bam')
     wildcard_constraints:
-        pair = '1|2'
+        mate = '1|2'
     threads:
         config[bwameth]['threads']
+    params:
+        genome = REFERENCE_GENOME
     shell:
         '''
         bwameth.py \
         -t {threads} \
-        --reference {reference_genome} \
+        --reference {params.genome} \
         {input} \
         | samtools view -bhS - > {output}
         '''
@@ -96,9 +98,9 @@ rule bwameth_reference:
 # Sort the output files
 rule samtools_sort:
     input:
-        'temp_data/{samples}.bam'
+        'temp_data/{sample}.bam'
     output:
-        temp('temp_Data/{samples}.sorted.bam')
+        temp('temp_Data/{sample}.sorted.bam')
     threads:
         config[samtools]['threads']
     shell:
@@ -108,9 +110,9 @@ rule samtools_sort:
 # Mark potential PCR duplicates with Picard Tools
 rule mark_dupes:
     input:
-        'temp_data/{samples}.sorted.bam'
+        'temp_data/{sample}.sorted.bam'
     output:
-        '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam'
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     params:
         picard_path = config[mark_duplicates]['picard_path']
     shell:
@@ -126,9 +128,9 @@ rule mark_dupes:
 # Index the sorted and duplicate-marked bam file
 rule index_sorted_marked_bam:
     input:
-        '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam'
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
-        '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai'
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai'
     threads:
         config[samtools_index]['threads']
     shell:
@@ -138,23 +140,24 @@ rule index_sorted_marked_bam:
 # Run MethylDackel to get the inclusion bounds for methylation calling
 rule methyldackel_mbias:
     input:
-        bam = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam',
-        index = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai'
+        bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
+        index = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai'
     output:
-        mbias = '4_methyldackel/{samples}.sorted.markdupes.mbias',
-        ob_plot = '4_methyldackel/{samples}.sorted.markdupes.bam_OB.svg',
-        ot_plot = '4_methyldackel/{samples}.sorted.markdupes.bam_OT.svg'
+        mbias = '4_methyldackel/{sample}.sorted.markdupes.mbias',
+        ob_plot = '4_methyldackel/{sample}.sorted.markdupes.bam_OB.svg',
+        ot_plot = '4_methyldackel/{sample}.sorted.markdupes.bam_OT.svg'
     threads:
         config[methyldackel]['threads']
     params:
-        out_prefix = '4_methyldackel/{samples}.sorted.markdupes'
+        out_prefix = '4_methyldackel/{sample}.sorted.markdupes'
+        genome = REFERENCE_GENOME
     shell:
         '''
         MethylDackel mbias \
         --CHG \
         --CHH \
         -@ {threads} \
-        {genome} \
+        {params.genome} \
         {input.bam} \
         {params.out_prefix} \
         2> {output.mbias}
@@ -164,18 +167,19 @@ rule methyldackel_mbias:
 # Run MethylDackel to extract cytosine stats
 rule methyldackel_extract:
     input:
-        bam = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bam',
-        index = '3_aligned_sorted_markdupes/{samples}.sorted.markdupes.bai',
-        mbias = '4_methyldackel/{samples}.sorted.markdupes.mbias'
+        bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
+        index = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
+        mbias = '4_methyldackel/{sample}.sorted.markdupes.mbias'
     output:
-        '4_methyldackel/{samples}.sorted.markdupes_{context}.bedGraph',
-        '4_methyldackel/{samples}.sorted.markdupes_{context}.methylKit'
+        '4_methyldackel/{sample}.sorted.markdupes_{context}.bedGraph',
+        '4_methyldackel/{sample}.sorted.markdupes_{context}.methylKit'
     wildcard_constraints:
         context = 'CpG|CHG|CHH'
     threads:
         config[methyldackel]['threads']
     params:
-        out_prefix = '4_methyldackel/{samples}.sorted.markdupes'
+        out_prefix = '4_methyldackel/{sample}.sorted.markdupes'
+        genome = REFERENCE_GENOME
     shell:
         '''
         # Get bounds for inclusion
@@ -193,7 +197,7 @@ rule methyldackel_extract:
         --methylKit \
         -@ {threads} \
         -o {params.out_prefix} \
-        {genome} \
+        {params.genome} \
         {input.bam}
 
         # Get the normal bedGraph output file
@@ -205,7 +209,7 @@ rule methyldackel_extract:
         --OB $OB \
         -@ {threads} \
         -o {params.out_prefix} \
-        {genome} \
+        {params.genome} \
         {input.bam}
         '''
 

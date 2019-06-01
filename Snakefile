@@ -12,8 +12,8 @@ reference_genome = config['reference_genome']
 
 rule all:
     input:
-        expand('4_methyldackel/{sample}.sorted.markdupes_{context}.{ext}',
-               sample=samples,
+        expand('4_methyldackel/{samples}.sorted.markdupes_{context}.{ext}',
+               samples=samples,
                context=[CpG, CHG, CHH],
                ext=[bedGraph, methylKit]
                )

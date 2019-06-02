@@ -86,10 +86,7 @@ rule bwameth_reference:
         genome = REFERENCE_GENOME
     shell:
         '''
-        bwameth.py \
-        -t {threads} \
-        --reference {params.genome} \
-        {input} \
+        bwameth.py -t {threads} --reference {params.genome} {input} \
         | samtools view -bhS - > {output}
         '''
 
@@ -115,14 +112,8 @@ rule mark_dupes:
     params:
         picard_path = config[mark_duplicates]['picard_path']
     shell:
-        '''
-        java -jar \
-        {params.picard_path} \
-        I={input} \
-        O={output} \
-        M={output}.log
-        '''
-
+        'java -jar {params.picard_path} I={input} O={output} M={output}.log'
+        
 
 # Index the sorted and duplicate-marked bam file
 rule index_sorted_marked_bam:
@@ -148,7 +139,7 @@ rule methyldackel_mbias:
     threads:
         config[methyldackel]['threads']
     params:
-        out_prefix = '4_methyldackel/{sample}.sorted.markdupes'
+        out_prefix = '4_methyldackel/{sample}.sorted.markdupes',
         genome = REFERENCE_GENOME
     shell:
         '''
@@ -177,7 +168,7 @@ rule methyldackel_extract:
     threads:
         config[methyldackel]['threads']
     params:
-        out_prefix = '4_methyldackel/{sample}.sorted.markdupes'
+        out_prefix = '4_methyldackel/{sample}.sorted.markdupes',
         genome = REFERENCE_GENOME
     shell:
         '''
@@ -210,6 +201,47 @@ rule methyldackel_extract:
         -o {params.out_prefix} \
         {params.genome} \
         {input.bam}
+        '''
+
+
+# Get the depth for each sample
+rule get_depth:
+    input:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
+    output:
+        '5_mosdepth/{sample}.sorted.markdupes.mosdepth.global.dist.txt',
+        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz',
+        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz.csi'
+    threads:
+        config[mosdepth]['threads']
+    params:
+        mapping_quality = config[mosdepth]['mapping_quality'],
+        out_prefix = '5_mosdepth/{sample}.sorted.markdupes'
+    shell:
+        '''
+        mosdepth \
+        -x \
+        -t {threads} \
+        -Q {params.mapping_quality} \
+        {params.out_prefix} \
+        {input}
+        '''
+
+
+# Calculate the coverage from the mosdepth output
+rule calc_coverage:
+    input:
+        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz'
+    output:
+        '5_mosdepth/{sample}.sorted.markdupes.coverage.txt'
+    params:
+        genome = REFERENCE_GENOME
+    shell:
+        '''
+        scripts/mosdepth_per-base_to_x_coverage.py \
+        -f {params.genome} \
+        -m {input} \
+        > {output}
         '''
 
 

@@ -33,3 +33,7 @@ samtools_index:
 
 methyldackel:
     threads : 5
+
+mosdepth:
+    threads : 5
+    mapping_quality : 10

@@ -22,12 +22,11 @@ rule all:
 # Combine the individual files from each sample's R1 and R2 files
 rule concatenate_reads:
     input:
-        'input_data/{sample}/{samples}{lane}R{mate}{id}.{ext}'
+        'input_data/{sample}/{samples}{lane}R{mate}{id}.fastq.gz'
     output:
         temp('temp_data/{sample}_R{mate}.fastq')
     wildcard_constraints:
-        mate = '1|2',
-        ext = 'fastq\.gz|fq\.gz'
+        mate = '1|2'
     shell:
         'zcat {input} > {output}'
 
@@ -50,10 +49,11 @@ rule fastqc_cat:
 # Trim the concatenated files
 rule trim_galore:
     input:
-        'temp_data/{sample}_R{mate}.fastq.gz'
+        'temp_data/{sample}_R1.fastq.gz',
+        'temp_data/{sample}_R2.fastq.gz'
     output:
-        '2_trim_galore/{sample}_R{mate}_val_{pair}.fq.gz',
-        '2_trim_galore/{sample}_R{mate}_val_{pair}_fastqc.html'
+        '2_trim_galore/{sample}_R{mate}_val_{mate}.fq.gz',
+        '2_trim_galore/{sample}_R{mate}_val_{mate}_fastqc.html'
     wildcard_constraints:
         mate = '1|2'
     params:
@@ -68,7 +68,7 @@ rule trim_galore:
         --trim-n \
         --quality 20 \
         --output_dir {params.out_dir} \
-        --mateed \
+        --paired \
         {input}
         '''
 
@@ -76,11 +76,10 @@ rule trim_galore:
 # Align to the reference
 rule bwameth_reference:
     input:
-        '2_trim_galore/{sample}_R{mate}_val_{pair}.fq.gz'
+        '2_trim_galore/{sample}_R1_val_1.fq.gz',
+        '2_trim_galore/{sample}_R2_val_2.fq.gz'
     output:
         temp('temp_data/{sample}.bam')
-    wildcard_constraints:
-        mate = '1|2'
     threads:
         config[bwameth]['threads']
     params:

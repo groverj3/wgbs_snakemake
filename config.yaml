@@ -5,28 +5,28 @@
 # Define sample IDs
 
 samples:
-
   # Samples should be reported by ID rather than filenames, and exclude the
   # trailing "_1" or "_2", one sample ID per pair
 
-reference_genome : 
-    # Path to genome here
+reference_genome:
+    # Path to genome .fasta here
 
 
 # Options for individual workflow steps
-
+ 
 trim_galore:
     adapter_seq : AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
     quality : 20
 
 bwameth:
     threads : 15
-
-mark_duplicates:
-    picard_path : /usr/local/bin/picard.jar
     
 samtools_sort:
     threads : 5
+    mem : 4G
+
+mark_duplicates:
+    picard_path : picard
 
 samtools_index:
     threads : 5
@@ -37,3 +37,15 @@ methyldackel:
 mosdepth:
     threads : 5
     mapping_quality : 10
+
+# Paths to individual tools
+# You probably don't need to change this unless programs are not in your $PATH
+
+paths:
+  fastqc_path : fastqc
+  trim_galore_path : trim_galore
+  bwameth_path : bwameth.py
+  samtools_path : samtools
+  picard_path : picard
+  methyldackel_path : MethylDackel
+  mosdepth_path : mosdepth

@@ -4,5 +4,5 @@ format = .fastq.gz
 
 Note: Currently, the workflow is written with paired-end NextSeq500 input data
 in mind, where usually you receive four files per sample (both for R1 and R2).
-This is subject to change and I think it actually would simply matters if I
+This is subject to change and I think it actually would simplify matters if I
 depended on the user to concatenate them together.

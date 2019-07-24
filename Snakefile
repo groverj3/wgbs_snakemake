@@ -30,7 +30,7 @@ rule concatenate_reads:
         '''
 
 
-# Run fastqc and keep the output
+# Run fastqc on the concatenated .fastq files
 rule fastqc_cat:
     input:
         'temp_data/{sample}_R{mate}.fastq'

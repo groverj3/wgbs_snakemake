@@ -20,9 +20,9 @@ pair numbers, lane info, etc.) and an already bwameth-indexed reference genome.
 Currently, the workflow expects multiple .fastq.gz files per sample (both R1 and
 R2), like is commonly received for NextSeq500 output. The first step concatenates
 them into a single fastq file for R1 and R2. Place the individual .fastq.gz files
-for R1 and R2 into subdirectories named for their sample IDs (without lane
-information) within the "input_data" directory. Once you have all the required
-dependencies installed run the workflow with:
+for R1 and R2 into subdirectories named for their sample IDs (without lane and
+mate information) within the "input_data" directory. Once you have all the
+required dependencies installed run the workflow with:
 
 `snakemake --cores {cores_here}`
 

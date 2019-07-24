@@ -1,4 +1,5 @@
 # Your input data goes in this folder
+# Include the individual files for each sample in a folder which matches the ID
 
 format = .fastq.gz
 
@@ -6,3 +7,14 @@ Note: Currently, the workflow is written with paired-end NextSeq500 input data
 in mind, where usually you receive four files per sample (both for R1 and R2).
 This is subject to change and I think it actually would simplify matters if I
 depended on the user to concatenate them together.
+
+ex. 
+
+JWG3_1/JWG3_2_1_S1_L001_R1_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L001_R2_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L002_R1_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L002_R2_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L003_R1_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L003_R2_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L004_R1_001.fastq.gz
+JWG3_1/JWG3_2_1_S1_L004_R2_001.fastq.gz

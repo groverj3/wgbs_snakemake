@@ -16,15 +16,6 @@ rule all:
             sample=SAMPLES
         )
 
-# rule all:
-#     input:
-#         expand(
-#             '4_methyldackel/{sample}.sorted.markdupes_{context}.{ext}',
-#             sample=SAMPLES,
-#             context=[CpG, CHG, CHH],
-#             ext=[bedGraph, methylKit]
-#         )
-
 
 # Combine the individual files from each sample's R1 and R2 files
 rule concatenate_reads:
@@ -140,11 +131,12 @@ rule samtools_sort:
     shell:
         '''
         {params.samtools_path} sort \
-        sort -@ {threads} \
+        -@ {threads} \
         -m {params.mem} \
         -O BAM \
+        -T {input}.samtools_sort.tmp \
+        -o {output} \
         {input} \
-        > {output}
         '''
 
 
@@ -154,6 +146,8 @@ rule mark_dupes:
         'temp_data/{sample}.sorted.bam'
     output:
         '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
+    log:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.log'
     params:
         picard_path = config['paths']['picard_path']
     shell:
@@ -161,7 +155,7 @@ rule mark_dupes:
         {params.picard_path} MarkDuplicates \
         I={input} \
         O={output} \
-        M={output}.log
+        M={log}
         '''
 
 
@@ -185,9 +179,9 @@ rule methyldackel_mbias:
         '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
-        '4_methyldackel/{sample}.sorted.markdupes.bam_OB.svg',
-        '4_methyldackel/{sample}.sorted.markdupes.bam_OT.svg',
-        mbias = '4_methyldackel/{sample}.sorted.markdupes.mbias'
+        '4_methyldackel_mbias/{sample}.sorted.markdupes_OB.svg',
+        '4_methyldackel_mbias/{sample}.sorted.markdupes_OT.svg',
+        mbias = '4_methyldackel_mbias/{sample}.sorted.markdupes.mbias'
     threads:
         config['methyldackel']['threads']
     params:
@@ -212,12 +206,14 @@ rule methyldackel_extract:
     input:
         '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
-        mbias = '4_methyldackel/{sample}.sorted.markdupes.mbias'
+        mbias = '4_methyldackel_mbias/{sample}.sorted.markdupes.mbias'
     output:
-        '4_methyldackel/{sample}.sorted.markdupes_{wildcards.context}.bedGraph',
-        '4_methyldackel/{sample}.sorted.markdupes_{wildcards.context}.methylKit'
-    wildcard_constraints:
-        context = 'CpG|CHG|CHH'
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CpG.bedGraph',
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CHG.bedGraph',
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CHH.bedGraph',
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CpG.methylKit',
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CHG.methylKit',
+        '5_methyldackel_extract/{sample}.sorted.markdupes_CHH.methylKit'
     threads:
         config['methyldackel']['threads']
     params:
@@ -264,9 +260,10 @@ rule get_depth:
         {rules.methyldackel_extract.output},
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
-        '5_mosdepth/{sample}.sorted.markdupes.mosdepth.global.dist.txt',
-        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz',
-        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz.csi'
+        '6_mosdepth/{sample}.sorted.markdupes.mosdepth.global.dist.txt',
+        '6_mosdepth/{sample}.sorted.markdupes.mosdepth.summary.txt',
+        '6_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz',
+        '6_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz.csi'
     threads:
         config['mosdepth']['threads']
     params:
@@ -288,15 +285,15 @@ rule get_depth:
 rule calc_coverage:
     input:
         {rules.get_depth.output},
-        '5_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz'
+        bed = '6_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz'
     output:
-        '5_mosdepth/{sample}.sorted.markdupes.coverage.txt'
+        '6_mosdepth/{sample}.sorted.markdupes.coverage.txt'
     params:
         genome = REFERENCE_GENOME
     shell:
         '''
-        scripts/mosdepth_per-base_to_x_coverage.py \
+        scripts/mosdepth_to_x_coverage.py \
         -f {params.genome} \
-        -m {input} \
+        -m {input.bed} \
         > {output}
         '''

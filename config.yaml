@@ -5,11 +5,14 @@
 # Define sample IDs
 
 samples:
+  JWG3_2_1
   # Samples should be reported by ID rather than filenames, and exclude the
-  # trailing "_1" or "_2", one sample ID per pair
+  # trailing "_1" or "_2", one sample ID per pair. Include the individual
+  # .fastq.gz files for each sample in a folder named for just the sample ID.
 
-reference_genome:
-    # Path to genome .fasta here
+reference_genome: 
+  ro18_v2_fixed_ids_bwameth_genome/ro18_v2_standard_output.final.scaffolds.fixed_ids.fasta
+    # Path to a bwameth indexed genome here
 
 
 # Options for individual workflow steps
@@ -23,10 +26,7 @@ bwameth:
     
 samtools_sort:
     threads : 5
-    mem : 4G
-
-mark_duplicates:
-    picard_path : picard
+    mem : 1G
 
 samtools_index:
     threads : 5

@@ -2,15 +2,16 @@
 # Purpose: Config file to edit before running the WGBS workflow Snakefile
 # Created: 2019-05-22
 
-# Define sample IDs
+# Global variables used for multiple rules
 
 samples:
   # Samples should be reported by ID rather than filenames, and exclude the
-  # trailing "_1" or "_2", one sample ID per pair. Include the individual
-  # .fastq.gz files for each sample in a folder named for just the sample ID.
+  # trailing "R1" and "R2", one sample ID per pair. If samples are supplied as
+  # separate .fastq.gz files within each pair concatenate them to a single R1 and
+  # R2 file prior to running.
 
 reference_genome:
-    # Path to a bwameth indexed genome here
+    # Path to a bwameth indexed genome here .fasta extension
 
 
 # Options for individual workflow steps
@@ -30,7 +31,8 @@ samtools_index:
     threads : 5
 
 methyldackel:
-    threads : 5
+    threads : 1
+    # MethylDackel segfaults with >1 core for some reason
 
 mosdepth:
     threads : 5

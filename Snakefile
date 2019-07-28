@@ -11,35 +11,20 @@ REFERENCE_GENOME = config['reference_genome']
 
 rule all:
     input:
-        expand(
-            '5_mosdepth/{sample}.sorted.markdupes.coverage.txt',
-            sample=SAMPLES
-        )
+        expand('6_mosdepth/{sample}.sorted.markdupes.coverage.txt',
+               sample=SAMPLES)
 
 
-# Combine the individual files from each sample's R1 and R2 files
-rule concatenate_reads:
-    input:
-        'input_data/{sample}'
-    output:
-        temp('temp_data/{sample}_R{mate}.fastq')
-    shell:
-        '''
-        zcat input_data/{wildcards.sample}/{wildcards.sample}*R{wildcards.mate}*.fastq.gz \
-        > {output}
-        '''
-
-
-# Run fastqc on the concatenated .fastq files
+# Run fastqc on the raw .fastq files
 rule fastqc_cat:
     input:
-        'temp_data/{sample}_R{mate}.fastq'
+        'input_data/{sample}_R{mate}.fastq.gz'
     output:
-        '1_fastqc_cat/{sample}_R{mate}_fastqc.html',
-        '1_fastqc_cat/{sample}_R{mate}_fastqc.zip'
+        '1_fastqc_raw/{sample}_R{mate}_fastqc.html',
+        '1_fastqc_raw/{sample}_R{mate}_fastqc.zip'
     params:
         fastqc_path = config['paths']['fastqc_path'],
-        out_dir = '1_fastqc_cat/'
+        out_dir = '1_fastqc_raw/'
     shell:
         '{params.fastqc_path} -o {params.out_dir} {input}'
 
@@ -47,12 +32,12 @@ rule fastqc_cat:
 # Trim the concatenated files
 rule trim_galore:
     input:
-        '1_fastqc_cat/{sample}_R1_fastqc.html',
-        '1_fastqc_cat/{sample}_R1_fastqc.zip',
-        '1_fastqc_cat/{sample}_R2_fastqc.html',
-        '1_fastqc_cat/{sample}_R2_fastqc.zip',
-        R1 = 'temp_data/{sample}_R1.fastq',
-        R2 = 'temp_data/{sample}_R2.fastq'
+        '1_fastqc_raw/{sample}_R1_fastqc.html',
+        '1_fastqc_raw/{sample}_R1_fastqc.zip',
+        '1_fastqc_raw/{sample}_R2_fastqc.html',
+        '1_fastqc_raw/{sample}_R2_fastqc.zip',
+        R1 = 'input_data/{sample}_R1.fastq',
+        R2 = 'input_data/{sample}_R2.fastq'
     output:
         '2_trim_galore/{sample}_R1_val_1.fq.gz',
         '2_trim_galore/{sample}_R1.fastq_trimming_report.txt',

@@ -5,12 +5,16 @@
 # Global variables used for multiple rules
 
 samples:
-  # Samples should be reported by ID rather than filenames, and exclude the
-  # trailing "R1" and "R2", one sample ID per pair. If samples are supplied as
-  # separate .fastq.gz files within each pair concatenate them to a single R1 and
-  # R2 file prior to running.
+    - Sample1
+    - Sample2
+    - etc...
+    # Samples should be reported by ID rather than filenames, and exclude the
+    # trailing "R1" and "R2", one sample ID per pair. If samples are supplied as
+    # separate .fastq.gz files within each pair concatenate them to a single R1 and
+    # R2 file prior to running.
 
 reference_genome:
+    /home/large_data/bwameth_reference/ref.fasta
     # Path to a bwameth indexed genome here .fasta extension
 
 

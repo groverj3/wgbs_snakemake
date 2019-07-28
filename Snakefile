@@ -16,7 +16,7 @@ rule all:
 
 
 # Run fastqc on the raw .fastq files
-rule fastqc_cat:
+rule fastqc_raw:
     input:
         'input_data/{sample}_R{mate}.fastq.gz'
     output:
@@ -29,7 +29,7 @@ rule fastqc_cat:
         '{params.fastqc_path} -o {params.out_dir} {input}'
 
 
-# Trim the concatenated files
+# Trim the read pairs
 rule trim_galore:
     input:
         '1_fastqc_raw/{sample}_R1_fastqc.html',
@@ -191,7 +191,7 @@ rule methyldackel_extract:
         genome = REFERENCE_GENOME
     shell:
         '''
-        # Get bounds for inclusion
+        # Get bounds for inclusion from the .mbias files
 
         OT=$(cut -d ' ' -f 5 {input.mbias})
         OB=$(cut -d ' ' -f 7 {input.mbias})

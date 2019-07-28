@@ -144,25 +144,10 @@ rule mark_dupes:
         '''
 
 
-# Index the sorted and duplicate-marked bam file
-rule index_sorted_marked_bam:
-    input:
-        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
-    output:
-        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai'
-    threads:
-        config['samtools_index']['threads']
-    params:
-        samtools_path = config['paths']['samtools_path']
-    shell:
-        '{params.samtools_path} index -@ {threads} {input} {output}'
-
-
 # Run MethylDackel to get the inclusion bounds for methylation calling
 rule methyldackel_mbias:
     input:
-        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
-        bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
         '4_methyldackel_mbias/{sample}.sorted.markdupes_OB.svg',
         '4_methyldackel_mbias/{sample}.sorted.markdupes_OT.svg',
@@ -180,7 +165,7 @@ rule methyldackel_mbias:
         --CHH \
         -@ {threads} \
         {params.genome} \
-        {input.bam} \
+        {input} \
         {params.out_prefix} \
         2> {output.mbias}
         '''
@@ -189,7 +174,6 @@ rule methyldackel_mbias:
 # Run MethylDackel to extract cytosine stats
 rule methyldackel_extract:
     input:
-        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
         mbias = '4_methyldackel_mbias/{sample}.sorted.markdupes.mbias'
     output:
@@ -254,7 +238,7 @@ rule get_depth:
     params:
         mapping_quality = config['mosdepth']['mapping_quality'],
         mosdepth_path = config['paths']['mosdepth_path'],
-        out_prefix = '5_mosdepth/{sample}.sorted.markdupes'
+        out_prefix = '6_mosdepth/{sample}.sorted.markdupes'
     shell:
         '''
         {params.mosdepth_path} \

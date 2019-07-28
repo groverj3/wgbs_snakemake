@@ -31,8 +31,7 @@ samtools_index:
     threads : 5
 
 methyldackel:
-    threads : 1
-    # MethylDackel segfaults with >1 core for some reason
+    threads : 5
 
 mosdepth:
     threads : 5

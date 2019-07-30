@@ -75,7 +75,7 @@ rule fastqc_trimmmed:
         '{params.fastqc_path} -o {params.out_dir} {input.fq_gz}'
 
 
-# Align to the reference output uncompressed bam to speed up sorting
+# Align to the reference
 rule bwameth_align:
     input:
         '2_trim_galore/{sample}_R1_val_1_fastqc.html',
@@ -105,7 +105,7 @@ rule bwameth_align:
         '''
 
 
-# Sort the output files, still uncompressed bam output for speed
+# Sort the output files
 rule samtools_sort:
     input:
         'temp_data/{sample}.bam'
@@ -128,7 +128,7 @@ rule samtools_sort:
         '''
 
 
-# Mark potential PCR duplicates with Picard Tools, output a compressed bam
+# Mark potential PCR duplicates with Picard Tools
 rule mark_dupes:
     input:
         'temp_data/{sample}.sorted.bam'

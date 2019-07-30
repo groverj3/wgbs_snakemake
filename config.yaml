@@ -14,18 +14,19 @@ samples:
     # R2 file prior to running.
 
 reference_genome:
-    /home/large_data/bwameth_reference/ref.fasta
-    # Path to a bwameth indexed genome here .fasta extension
+    stuff/bwameth_reference/example_ref.fasta
+    # Path to a bwameth indexed genome here with .fasta extension
 
 
 # Options for individual workflow steps
- 
+# Configure threads for each step as desired, this is a sane starting point
+
 trim_galore:
     adapter_seq : AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
     quality : 20
 
 bwameth:
-    threads : 15
+    threads : 10
     
 samtools_sort:
     threads : 5
@@ -41,8 +42,10 @@ mosdepth:
     threads : 5
     mapping_quality : 10
 
+
 # Paths to individual tools
 # You probably don't need to change this unless programs are not in your $PATH
+# Picard sometimes needs an alias to java -jar /install_dir/picard.jar
 
 paths:
   fastqc_path : fastqc

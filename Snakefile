@@ -15,7 +15,7 @@ rule all:
                sample=SAMPLES)
 
 
-# Run fastqc on the raw .fastq files
+# Run fastqc on the raw .fastq.gz files
 rule fastqc_raw:
     input:
         'input_data/{sample}_R{mate}.fastq.gz'
@@ -36,13 +36,13 @@ rule trim_galore:
         '1_fastqc_raw/{sample}_R1_fastqc.zip',
         '1_fastqc_raw/{sample}_R2_fastqc.html',
         '1_fastqc_raw/{sample}_R2_fastqc.zip',
-        R1 = 'input_data/{sample}_R1.fastq',
-        R2 = 'input_data/{sample}_R2.fastq'
+        R1 = 'input_data/{sample}_R1.fastq.gz',
+        R2 = 'input_data/{sample}_R2.fastq.gz'
     output:
         '2_trim_galore/{sample}_R1_val_1.fq.gz',
-        '2_trim_galore/{sample}_R1.fastq_trimming_report.txt',
+        '2_trim_galore/{sample}_R1.fastq.gz_trimming_report.txt',
         '2_trim_galore/{sample}_R2_val_2.fq.gz',
-        '2_trim_galore/{sample}_R2.fastq_trimming_report.txt'
+        '2_trim_galore/{sample}_R2.fastq.gz_trimming_report.txt'
     params:
         adapter_seq = config['trim_galore']['adapter_seq'],
         out_dir = '2_trim_galore',
@@ -63,7 +63,7 @@ rule trim_galore:
 # Run fastqc on the trimmmed reads
 rule fastqc_trimmmed:
     input:
-        '2_trim_galore/{sample}_R{mate}.fastq_trimming_report.txt',
+        '2_trim_galore/{sample}_R{mate}.fastq.gz_trimming_report.txt',
         fq_gz = '2_trim_galore/{sample}_R{mate}_val_{mate}.fq.gz'
     output:
         '2_trim_galore/{sample}_R{mate}_val_{mate}_fastqc.html',
@@ -75,8 +75,8 @@ rule fastqc_trimmmed:
         '{params.fastqc_path} -o {params.out_dir} {input.fq_gz}'
 
 
-# # Align to the reference
-rule bwameth_reference:
+# Align to the reference output uncompressed bam to speed up sorting
+rule bwameth_align:
     input:
         '2_trim_galore/{sample}_R1_val_1_fastqc.html',
         '2_trim_galore/{sample}_R1_val_1_fastqc.zip',
@@ -86,6 +86,8 @@ rule bwameth_reference:
         R2 = '2_trim_galore/{sample}_R2_val_2.fq.gz'
     output:
         temp('temp_data/{sample}.bam')
+    log:
+        '3_aligned_sorted_markdupes/{sample}.bwameth.log'
     threads:
         config['bwameth']['threads']
     params:
@@ -97,12 +99,13 @@ rule bwameth_reference:
         -t {threads} \
         --reference {params.genome} \
         {input.R1} {input.R2} \
-        | samtools view -bhS - \
+        2> {log} \
+        | samtools view -b - \
         > {output}
         '''
 
 
-# Sort the output files
+# Sort the output files, still uncompressed bam output for speed
 rule samtools_sort:
     input:
         'temp_data/{sample}.bam'
@@ -125,7 +128,7 @@ rule samtools_sort:
         '''
 
 
-# Mark potential PCR duplicates with Picard Tools
+# Mark potential PCR duplicates with Picard Tools, output a compressed bam
 rule mark_dupes:
     input:
         'temp_data/{sample}.sorted.bam'
@@ -144,10 +147,30 @@ rule mark_dupes:
         '''
 
 
+rule samtools_index:
+    input:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
+    output:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai'
+    threads:
+        config['samtools_index']['threads']
+    params:
+        samtools_path = config['paths']['samtools_path']
+    shell:
+        '''
+        {params.samtools_path} index \
+        -@ {threads} \
+        -b \
+        {input} \
+        {output}
+        '''
+
+
 # Run MethylDackel to get the inclusion bounds for methylation calling
 rule methyldackel_mbias:
     input:
-        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
+        bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
         '4_methyldackel_mbias/{sample}.sorted.markdupes_OB.svg',
         '4_methyldackel_mbias/{sample}.sorted.markdupes_OT.svg',
@@ -156,7 +179,7 @@ rule methyldackel_mbias:
         config['methyldackel']['threads']
     params:
         methyldackel_path = config['paths']['methyldackel_path'],
-        out_prefix = '4_methyldackel/{sample}.sorted.markdupes',
+        out_prefix = '4_methyldackel_mbias/{sample}.sorted.markdupes',
         genome = REFERENCE_GENOME
     shell:
         '''
@@ -165,15 +188,16 @@ rule methyldackel_mbias:
         --CHH \
         -@ {threads} \
         {params.genome} \
-        {input} \
-        {params.out_prefix} \
-        2> {output.mbias}
+        ./{input.bam} \
+        ./{params.out_prefix} \
+        2> ./{output.mbias}
         '''
 
 
 # Run MethylDackel to extract cytosine stats
 rule methyldackel_extract:
     input:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
         mbias = '4_methyldackel_mbias/{sample}.sorted.markdupes.mbias'
     output:
@@ -187,7 +211,7 @@ rule methyldackel_extract:
         config['methyldackel']['threads']
     params:
         methyldackel_path = config['paths']['methyldackel_path'],
-        out_prefix = '4_methyldackel/{sample}.sorted.markdupes',
+        out_prefix = './5_methyldackel_extract/{sample}.sorted.markdupes',
         genome = REFERENCE_GENOME
     shell:
         '''

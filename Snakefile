@@ -2,10 +2,10 @@
 # Purpose: Run the whole-genome bisulfite sequencing workflow
 # Created: 2019-05-22
 
-configfile: 'config.yaml'
-
 
 # Get overall workflow parameters from config.yaml
+configfile: 'config.yaml'
+
 SAMPLES = config['samples']
 REFERENCE_GENOME = config['reference_genome']
 
@@ -13,6 +13,37 @@ rule all:
     input:
         expand('6_mosdepth/{sample}.sorted.markdupes.coverage.txt',
                sample=SAMPLES)
+
+
+# Index the reference genome
+# ancient() will assume the reference is older than output files if they exist
+rule bwameth_index:
+    input:
+        ancient(REFERENCE_GENOME)
+    output:
+        REFERENCE_GENOME + '.bwameth.c2t',
+        REFERENCE_GENOME + '.bwameth.c2t.amb',
+        REFERENCE_GENOME + '.bwameth.c2t.ann',
+        REFERENCE_GENOME + '.bwameth.c2t.bwt',
+        REFERENCE_GENOME + '.bwameth.c2t.pac',
+        REFERENCE_GENOME + '.bwameth.c2t.sa'
+    params:
+        bwameth_path = config['paths']['bwameth_path'],
+    shell:
+        '{params.bwameth_path} index {input}'
+
+
+# Index the reference genome with faidx
+# ancient() will assume the reference is older than output files if they exist
+rule samtools_faidx:
+    input:
+        ancient(REFERENCE_GENOME)
+    output:
+        REFERENCE_GENOME + '.fai'
+    params:
+        samtools_path = config['paths']['samtools_path']
+    shell:
+        '{params.samtools_path} faidx {input}'
 
 
 # Run fastqc on the raw .fastq.gz files
@@ -78,6 +109,7 @@ rule fastqc_trimmmed:
 # Align to the reference
 rule bwameth_align:
     input:
+        {rules.bwameth_index.output},
         '2_trim_galore/{sample}_R1_val_1_fastqc.html',
         '2_trim_galore/{sample}_R1_val_1_fastqc.zip',
         '2_trim_galore/{sample}_R2_val_2_fastqc.html',
@@ -169,6 +201,7 @@ rule samtools_index:
 # Run MethylDackel to get the inclusion bounds for methylation calling
 rule methyldackel_mbias:
     input:
+        {rules.samtools_faidx.output},
         '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
@@ -197,6 +230,7 @@ rule methyldackel_mbias:
 # Run MethylDackel to extract cytosine stats
 rule methyldackel_extract:
     input:
+        {rules.samtools_faidx.output},
         '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam',
         mbias = '4_methyldackel_mbias/{sample}.sorted.markdupes.mbias'

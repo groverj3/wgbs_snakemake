@@ -17,12 +17,9 @@ the thread count for each step are changeable from the .yaml file.
 Edit the .yaml file to include your sample IDs (excluding extensions,
 pair numbers, lane info, etc.) and an already bwameth-indexed reference genome.
 
-Currently, the workflow expects multiple .fastq.gz files per sample (both R1 and
-R2), like is commonly received for NextSeq500 output. The first step concatenates
-them into a single fastq file for R1 and R2. Place the individual .fastq.gz files
-for R1 and R2 into subdirectories named for their sample IDs (without lane and
-mate information) within the "input_data" directory. Once you have all the
-required dependencies installed run the workflow with:
+Currently, the workflow expects an R1 and R2 file for each sample. Place the
+individual .fastq.gz files for R1 and R2 into the input_data directory. Once
+you have all the required dependencies installed run the workflow with:
 
 `snakemake --cores {cores_here}`
 
@@ -38,13 +35,16 @@ required dependencies installed run the workflow with:
 9. [Python3](https://www.python.org/)
 
 ## Workflow
-1. Quality checking, and output of sample information with FastQC
-2. Adapter and quality trimming with Trim Galore!
-3. Alignment to a reference genome with bwa-meth
-4. Marking PCR duplicates with Picard Tools MarkDuplicates
-5. Detecting methylation bias per read position with MethylDackel
-6. Extracting methylation calls per position into bedGraph and methylKit formats with MethylDackel
-7. Calculating depth and coverage with Mosdepth
+1. Index the reference genome with bwameth and samtools faidx
+2. Quality checking, and output of sample information with FastQC
+3. Adapter and quality trimming with Trim Galore!
+4. Alignment to a reference genome with bwa-meth
+5. Marking PCR duplicates with Picard Tools MarkDuplicates
+6. Detecting methylation bias per read position with MethylDackel
+7. Extracting methylation calls per position into bedGraph and methylKit formats with MethylDackel
+8. Calculating depth and coverage with Mosdepth
 
 The output from the workflow is suitable for DMR-calling or aggregation of calls
 to determine % methylation per feature.
+
+![DAG](dag.png)

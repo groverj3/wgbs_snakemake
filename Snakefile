@@ -12,7 +12,12 @@ REFERENCE_GENOME = config['reference_genome']
 rule all:
     input:
         expand('6_mosdepth/{sample}.sorted.markdupes.coverage.txt',
-               sample=SAMPLES)
+               sample=SAMPLES),
+        expand('5_methyldackel_extract/{sample}.sorted.markdupes_{context}.{ext}',
+               sample=SAMPLES, context=['CpG', 'CHG', 'CHH'],
+               ext=['bedGraph', 'methylKit']),
+        expand('2_trim_galore/{sample}_R{mate}_val_{mate}_fastqc.{ext}',
+               sample=SAMPLES, mate=[1, 2], ext=['html', 'zip'])
 
 
 # Index the reference genome
@@ -110,10 +115,6 @@ rule fastqc_trimmmed:
 rule bwameth_align:
     input:
         {rules.bwameth_index.output},
-        '2_trim_galore/{sample}_R1_val_1_fastqc.html',
-        '2_trim_galore/{sample}_R1_val_1_fastqc.zip',
-        '2_trim_galore/{sample}_R2_val_2_fastqc.html',
-        '2_trim_galore/{sample}_R2_val_2_fastqc.zip',
         R1 = '2_trim_galore/{sample}_R1_val_1.fq.gz',
         R2 = '2_trim_galore/{sample}_R2_val_2.fq.gz'
     output:
@@ -282,9 +283,8 @@ rule methyldackel_extract:
 
 
 # Get the depth for each sample
-rule get_depth:
+rule mosdepth:
     input:
-        {rules.methyldackel_extract.output},
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
         '6_mosdepth/{sample}.sorted.markdupes.mosdepth.global.dist.txt',
@@ -311,7 +311,6 @@ rule get_depth:
 # Calculate the coverage from the mosdepth output
 rule calc_coverage:
     input:
-        {rules.get_depth.output},
         bed = '6_mosdepth/{sample}.sorted.markdupes.per-base.bed.gz'
     output:
         '6_mosdepth/{sample}.sorted.markdupes.coverage.txt'

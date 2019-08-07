@@ -1,21 +1,19 @@
 # WGBS Snakemake Workflow
 This workflow is designed to run the basic steps for a whole-genome bisulfite 
 sequencing experiment. It's intended to automate the workflow for future-use and
-reproducibility. If you're looking for something which will do literally
-everything for an experiment then this isn't the workflow you're looking for
-(yet). However, if you're comfortable running the individual programs and want
-to save yourself the trouble of running every step separately this will save you
-time.
+reproducibility. Its design is explicitly simple to make it easy for users to not
+only understand the order and purpose of each step, but to be able to look at the
+code and figure out how it works and get it running extremely easily.
 
-The advantage of running this through Snakemake is that it intelligently handles
+One advantage of running this through Snakemake is that it intelligently handles
 threading and replaces completed processes up to the number of cores specified
 at run-time. Individual options for the steps are mostly hard-coded, as this is
 intended for reproducibility of our particular workflow. However, options for
-the thread count for each step are changeable from the .yaml file.
+the thread count for each step are conigurable in the .yaml file.
 
 ## Getting Started
 Edit the .yaml file to include your sample IDs (excluding extensions,
-pair numbers, lane info, etc.) and an already bwameth-indexed reference genome.
+pair numbers, lane info, etc.) and a reference genome (which may be pre-indexed).
 
 Currently, the workflow expects an R1 and R2 file for each sample. Place the
 individual .fastq.gz files for R1 and R2 into the input_data directory. Once

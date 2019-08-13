@@ -7,9 +7,8 @@ code and figure out how it works and get it running extremely easily.
 
 One advantage of running this through Snakemake is that it intelligently handles
 threading and replaces completed processes up to the number of cores specified
-at run-time. Individual options for the steps are mostly hard-coded, as this is
-intended for reproducibility of our particular workflow. However, options for
-the thread count for each step are conigurable in the .yaml file.
+at run-time. However, options for the thread count for each step are configurable
+in the .yaml file.
 
 ## Getting Started
 Edit the .yaml file to include your sample IDs (excluding extensions,

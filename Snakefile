@@ -285,6 +285,7 @@ rule methyldackel_extract:
 # Get the depth for each sample
 rule mosdepth:
     input:
+        '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bai',
         bam = '3_aligned_sorted_markdupes/{sample}.sorted.markdupes.bam'
     output:
         '6_mosdepth/{sample}.sorted.markdupes.mosdepth.global.dist.txt',

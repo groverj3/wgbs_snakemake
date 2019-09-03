@@ -15,7 +15,8 @@ samples:
 
 reference_genome:
     stuff/bwameth_reference/example_ref.fasta
-    # Path to a bwameth indexed genome here with .fasta extension
+    # Path to a reference genome here with .fasta extension
+    # If indexed, then the index will not be regenerated
 
 
 # Options for individual workflow steps

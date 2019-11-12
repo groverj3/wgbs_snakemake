@@ -1,4 +1,6 @@
 # WGBS Snakemake Workflow
+[![DOI](https://zenodo.org/badge/189665065.svg)](https://zenodo.org/badge/latestdoi/189665065)
+
 This workflow is designed to run the basic steps for a whole-genome bisulfite 
 sequencing experiment. It's intended to automate the workflow for future-use and
 reproducibility. Its design is explicitly simple to make it easy for users to not

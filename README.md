@@ -43,7 +43,9 @@ Currently, the workflow expects an R1 and R2 file for each sample. Place the
 individual .fastq.gz files for R1 and R2 into the input_data directory. Once
 you have all the required dependencies installed run the workflow with:
 
-`snakemake --cores {cores_here}`
+```shell
+snakemake --cores {cores_here}
+```
 
 However, it is recommended to use the supplied [Docker](https://www.docker.com/)
 image.

@@ -200,5 +200,5 @@ very fast Mosdepth tool from Brent Pedersen and some python scripts.
 Please do cite us! The included Zenodo DOI is the easiest way. Additionally, you
 should consider citing the paper in which we first used this workflow:
 
-Grover JW *et al.*. Abundant expression of maternal siRNAs is a conserved feature of seed development. 2020.
+Grover JW *et al*. Abundant expression of maternal siRNAs is a conserved feature of seed development. 2020.
 PNAS. https://doi.org/10.1073/pnas.2001332117
